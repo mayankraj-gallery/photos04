@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gallery</title>
+    <title>Secure Gallery</title>
 
     <script type="text/javascript">
         (function(c,l,a,r,i,t,y){
@@ -14,13 +14,14 @@
     </script>
 
     <style>
+        /* Speed & Mobile Layout */
         body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
         #gallery-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
         
-        /* INITIAL SIZE: 30% */
+        /* INITIAL SIZE: 35% */
         img { 
-            width: 30%; 
+            width: 35%; 
             height: auto; 
             transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1); 
             transform-origin: center; 
@@ -28,7 +29,7 @@
             border: 1px solid #222;
         }
 
-        /* ZOOM SCALE: 6x */
+        /* ZOOM SCALE: 6x magnification */
         .zoomed { transform: scale(6) !important; border: none; }
 
         /* Instructions Modal */
@@ -38,7 +39,7 @@
         .modal-box p { margin: 12px 0; font-size: 16px; color: #ccc; }
         .btn-start { margin-top: 25px; padding: 14px 50px; background: #fff; color: #000; border: none; border-radius: 30px; font-weight: bold; font-size: 16px; }
 
-        /* Toast for Mobile Screenshot attempt */
+        /* Screenshot Toast (Triggers on app-switching/shade pull) */
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 0, 0.9); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; display: none; z-index: 2000; width: 80%; text-align: center; }
     </style>
 </head>
@@ -63,31 +64,37 @@
         const mainImg = document.getElementById('main-photo');
         let isZoomed = false;
 
+        // Custom Tap-to-Zoom Logic
         function handleTap(e) {
             if (!isZoomed) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
+                
                 mainImg.style.transformOrigin = `${x}% ${y}%`;
                 mainImg.classList.add('zoomed');
                 isZoomed = true;
-                if (window.clarity) { window.clarity("event", "zoom_in"); }
+                
+                // Track interest area in Clarity
+                if (window.clarity) { window.clarity("event", "zoom_in_success"); }
             } else {
                 mainImg.classList.remove('zoomed');
                 isZoomed = false;
             }
         }
 
-        // Silent track for long-press download attempts
+        // Silent Download Tracker (Logs to Clarity, no notification to user)
         function silentTrack() {
-            if (window.clarity) { window.clarity("event", "download_attempt_silent"); }
-            return false; 
+            if (window.clarity) { 
+                window.clarity("event", "download_attempt_silent"); 
+            }
+            return false; // Blocks long-press menu quietly
         }
 
-        // Mobile Screenshot Deterrent: Detects if user leaves app or pulls down tray
+        // Mobile Screenshot Warning (Triggers if they switch apps or minimize)
         document.addEventListener("visibilitychange", function() {
             if (document.visibilityState === 'hidden') {
-                if (window.clarity) { window.clarity("event", "potential_capture_app_switch"); }
+                if (window.clarity) { window.clarity("event", "potential_screenshot_attempt"); }
                 const toast = document.getElementById('toast');
                 toast.style.display = 'block';
                 setTimeout(() => { toast.style.display = 'none'; }, 4000);
