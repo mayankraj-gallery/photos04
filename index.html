@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gallery Preview</title>
+    <title>Secure Gallery</title>
 
     <script type="text/javascript">
         (function(c,l,a,r,i,t,y){
@@ -18,43 +18,42 @@
         
         #gallery-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
         
-        /* THE TRICK: Initial state is small (40%) so they MUST zoom to see */
+        /* INITIAL SIZE: Reduced to 25% to force zooming */
         img { 
-            width: 40%; 
+            width: 25%; 
             height: auto; 
             transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), width 0.4s; 
             transform-origin: center; 
             display: block; 
-            border: 1px solid #333;
-            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            border: 1px solid #222;
         }
 
-        /* The Zoomed state: Enlarges the image to 400% of its original container size */
+        /* ZOOM SCALE: Set to 5.5x magnification */
         .zoomed { 
-            transform: scale(6) !important; 
+            transform: scale(5.5) !important; 
             border: none;
         }
 
-        /* Professional Instructions Modal */
-        #instructions-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        /* Instructions Modal */
+        #instructions-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .modal-box { background: #111; padding: 35px 25px; border-radius: 16px; text-align: center; border: 1px solid #333; width: 85%; max-width: 340px; }
         .modal-box h3 { margin: 0 0 20px 0; font-size: 20px; color: #fff; }
-        .modal-box p { margin: 12px 0; font-size: 15px; color: #bbb; line-height: 1.5; }
+        .modal-box p { margin: 12px 0; font-size: 16px; color: #ccc; }
         .btn-start { margin-top: 25px; padding: 14px 50px; background: #fff; color: #000; border: none; border-radius: 30px; font-weight: bold; font-size: 16px; cursor: pointer; }
 
-        /* Security Notification Toast */
+        /* Screenshot Toast (Only for keyboard shortcuts) */
         #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 0, 0.9); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; display: none; z-index: 2000; }
     </style>
 </head>
-<body oncontextmenu="return notifyAttempt();">
+<body oncontextmenu="return silentTrack();">
 
-    <div id="toast">Capture attempt noted. Notification sent.</div>
+    <div id="toast">Screenshot attempt noted. Notification sent.</div>
 
     <div id="instructions-modal">
         <div class="modal-box">
             <h3>Gallery Instructions</h3>
             <p><b>Tap to Zoom In/Out</b></p>
-            <p><b>Taking Screenshot or Download attempt would be notified</b></p>
+            <p><b>Screenshot attempt gets notified.</b></p>
             <button class="btn-start" onclick="closeModal()">OK</button>
         </div>
     </div>
@@ -73,40 +72,40 @@
 
         function handleTap(e) {
             if (!isZoomed) {
-                // Determine exact touch point for Clarity to track
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
                 
-                // Jump to that specific spot
                 mainImg.style.transformOrigin = `${x}% ${y}%`;
                 mainImg.classList.add('zoomed');
                 isZoomed = true;
                 
-                if (window.clarity) {
-                    window.clarity("event", "detailed_inspection_start");
-                }
+                if (window.clarity) { window.clarity("event", "zoom_in_tracked"); }
             } else {
-                // Zoom back out to "Preview Mode"
                 mainImg.classList.remove('zoomed');
                 isZoomed = false;
             }
         }
 
-        // Security Alert Function
-        function notifyAttempt() {
-            const toast = document.getElementById('toast');
-            toast.style.display = 'block';
-            if (window.clarity) { window.clarity("event", "security_trigger"); }
-            setTimeout(() => { toast.style.display = 'none'; }, 3000);
-            return false;
+        // SILENT DOWNLOAD TRACKING (Right-click/Long-press)
+        function silentTrack() {
+            if (window.clarity) { 
+                window.clarity("event", "download_attempt_silent"); 
+            }
+            return false; // Blocks the menu without showing any alert to the user
         }
 
-        // Shortcut blocking
+        // KEYBOARD SCREENSHOT/SAVE NOTIFICATION
         window.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'c')) {
+            const isSave = (e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p');
+            const isPrint = e.key === 'PrintScreen';
+            
+            if (isSave || isPrint) {
                 e.preventDefault();
-                notifyAttempt();
+                const toast = document.getElementById('toast');
+                toast.style.display = 'block';
+                if (window.clarity) { window.clarity("event", "screenshot_shortcut_detected"); }
+                setTimeout(() => { toast.style.display = 'none'; }, 3000);
             }
         });
     </script>
