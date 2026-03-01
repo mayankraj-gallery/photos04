@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gallery</title>
+
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vovn59tmej");
+    </script>
+
+    <style>
+        /* Speed & Clean UI */
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        #gallery-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        
+        /* High-Performance Tap to Zoom */
+        img { max-width: 100%; max-height: 100%; transition: transform 0.35s cubic-bezier(0.2, 0, 0.2, 1); transform-origin: center; display: block; }
+        .zoomed { transform: scale(3.5) !important; }
+
+        /* Professional Instructions Modal */
+        #instructions-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: #111; padding: 35px 25px; border-radius: 16px; text-align: center; border: 1px solid #333; width: 85%; max-width: 340px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-box h3 { margin: 0 0 20px 0; font-size: 20px; color: #fff; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .modal-box p { margin: 12px 0; font-size: 15px; color: #bbb; line-height: 1.5; }
+        .modal-box b { color: #fff; display: block; margin-top: 5px; }
+        .btn-start { margin-top: 25px; padding: 14px 50px; background: #fff; color: #000; border: none; border-radius: 30px; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+        /* Security Notification Toast */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 0, 0.8); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: bold; display: none; z-index: 2000; border: 1px solid #f00; }
+    </style>
+</head>
+<body oncontextmenu="return notifyAttempt();">
+
+    <div id="toast">Capture attempt noted. Notification sent.</div>
+
+    <div id="instructions-modal">
+        <div class="modal-box">
+            <h3>Gallery Instructions</h3>
+            <p><b>Tap to Zoom In/Out</b></p>
+            <p><b>Taking Screenshot or Download attempt would be notified</b></p>
+            <button class="btn-start" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <div id="gallery-container" onclick="handleTap(event)">
+        <img id="main-photo" src="photo04.png" alt="Gallery Photo">
+    </div>
+
+    <script>
+        const mainImg = document.getElementById('main-photo');
+        let isZoomed = false;
+
+        function closeModal() {
+            document.getElementById('instructions-modal').style.display = 'none';
+        }
+
+        // SMOOTH TAP-TO-ZOOM
+        function handleTap(e) {
+            if (!isZoomed) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                
+                mainImg.style.transformOrigin = `${x}% ${y}%`;
+                mainImg.classList.add('zoomed');
+                isZoomed = true;
+            } else {
+                mainImg.classList.remove('zoomed');
+                isZoomed = false;
+            }
+        }
+
+        // SECURITY NOTIFICATION SCRIPT
+        function notifyAttempt() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            
+            // Log to Clarity
+            if (window.clarity) {
+                window.clarity("event", "security_warning_triggered");
+            }
+            
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+            return false; // Blocks right-click/long-press menu
+        }
+
+        // Detect common download/screenshot shortcut attempts
+        window.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'c')) {
+                e.preventDefault();
+                notifyAttempt();
+            }
+        });
+    </script>
+</body>
+</html>
